@@ -1,0 +1,39 @@
+id: bitrix-env-file
+
+info:
+  name: Bitrix / Laravel .env Exposure
+  author: JhonnyBonny
+  severity: high
+  description: Detects exposed .env with credentials or app secrets.
+  reference:
+    - https://github.com/cr1f/writeups/blob/main/attacking_bitrix.pdf
+  classification:
+    cwe-id: CWE-200
+  metadata:
+    max-request: 1
+  tags: bitrix,env,exposure,config
+
+http:
+  - method: GET
+    path:
+      - '{{BaseURL}}/.env'
+
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+
+      - type: word
+        part: body
+        words:
+          - "DB_PASSWORD"
+          - "DB_USERNAME"
+          - "DB_HOST"
+          - "APP_KEY"
+          - "APP_SECRET"
+          - "MAIL_PASSWORD"
+          - "AWS_SECRET"
+          - "REDIS_PASSWORD"
+          - "DATABASE_URL"
+        condition: or

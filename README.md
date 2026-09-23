@@ -1,25 +1,43 @@
 # nuclei-templates-bitrix
-This repository contains nuclei templates for scanning websites built on CMS Bitrix.
+
+Nuclei templates for scanning websites built on CMS Bitrix.
+
+## Layout
+
+| Path | What |
+|------|------|
+| `templates/` | Regular checks (safe for bulk runs) |
+| `enum/` | UIDH login bruteforce — **not** included in normal scans |
+
 ## Usage
-1. Clone this repository to your local machine:
+
 ```bash
 git clone https://github.com/jhonnybonny/bitrix-nuclei-templates.git
-cd nuclei-templates-bitrix
+cd bitrix-nuclei-templates
 ```
-2. Install nuclei if you haven't already. Refer to the [nuclei documentation](https://nuclei.projectdiscovery.io/docs/installation/) for installation instructions.
-3. Run nuclei with the Bitrix templates on a list of targets specified in TARGETS.txt:
-```bash\n"
-nuclei -t . -l TARGETS.txt
-```
-Replace `TARGETS.txt` with your list of target URLs or IP addresses.
-Or, you can run nuclei with the Bitrix templates on a specific URL:
+
+Install nuclei: https://nuclei.projectdiscovery.io/docs/installation/
+
+### Normal scan (no login brute)
+
 ```bash
-nuclei -t . -u https://example.com
+nuclei -t templates/ -l TARGETS.txt
+nuclei -t templates/ -u https://example.com
 ```
-Replace `https://example.com` with the URL of the website you want to scan.
+
+### Account enumeration (UIDH + Unix wordlist)
+
+```bash
+nuclei -t enum/ -u https://example.com
+```
+
+Wordlist: `enum/wordlists/unix_users.txt` (~300 Unix/service/Bitrix logins).
+Valid login → response sets `BITRIX_SM_UIDH=deleted`.
+
 ## Customization
-You can customize the templates or add new ones according to your requirements. Refer to the [nuclei documentation](https://nuclei.projectdiscovery.io/docs/writing-templates/) for writing custom templates.
-## Contributing
-Contributions are welcome! If you have new templates or improvements to existing ones, feel free to open a pull request.
+
+See https://nuclei.projectdiscovery.io/docs/writing-templates/
+
 ## License
-This project is licensed under the [MIT License](LICENSE).
+
+MIT — see [LICENSE](LICENSE).

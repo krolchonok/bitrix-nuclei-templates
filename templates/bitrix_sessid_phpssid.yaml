@@ -1,0 +1,42 @@
+id: bitrix-sessid-phpssid
+
+info:
+  name: Bitrix Session and PHPSESSID Extraction
+  author: JhonnyBonny
+  severity: info
+  description: Extracts bitrix_sessid and PHPSESSID from composite_data.php.
+  metadata:
+    max-request: 1
+  tags: bitrix,sessid,info
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/bitrix/tools/composite_data.php"
+
+    matchers-condition: or
+    matchers:
+      - type: regex
+        part: body
+        regex:
+          - "bitrix_sessid'\\s*:\\s*'[^']+'"
+
+      - type: regex
+        part: header
+        regex:
+          - "PHPSESSID=[^;]+"
+
+    extractors:
+      - type: regex
+        part: body
+        name: bitrix_sessid
+        group: 1
+        regex:
+          - "bitrix_sessid'\\s*:\\s*'([^']+)'"
+
+      - type: regex
+        part: header
+        name: phpsessid
+        group: 1
+        regex:
+          - "PHPSESSID=([^;]+)"

@@ -1,13 +1,17 @@
 id: bitrix-esol-excel-rce
 
 info:
-  name: Bitrix Esol Excel RCE search
-  author: @shit_sec
-  severity: critical
-  description: Поиск потенциальных точек RCE в модулях импорта/экспорта Bitrix
-  tags: bitrix,exposure,cron
+  name: Bitrix Esol/KDA Excel Cron Settings Exposure
+  author: "@shit_sec"
+  severity: high
+  description: |
+    Detects exposed cron/admin settings pages of Esol/KDA Excel import-export
+    modules (potential RCE surface if reachable without auth).
+  metadata:
+    max-request: 13
+  tags: bitrix,exposure,cron,rce
 
-requests:
+http:
   - method: GET
     path:
       - "{{BaseURL}}/bitrix/modules/kda.importexcel/admin/iblock_import_excel_cron_settings.php"
@@ -24,6 +28,7 @@ requests:
       - "{{BaseURL}}/bitrix/admin/esol_export_xml_cron_settings.php"
       - "{{BaseURL}}/bitrix/admin/esol_import_xml_cron_settings.php"
 
+    stop-at-first-match: true
     matchers-condition: and
     matchers:
       - type: status
@@ -35,10 +40,16 @@ requests:
         words:
           - "404"
           - "Not found"
+          - "Not Found"
           - "Авторизация"
+          - "authorize"
           - "Не найдено"
+          - "Страница не найдена"
+          - "Access denied"
+          - "Доступ запрещен"
         negative: true
+        condition: or
 
       - type: dsl
         dsl:
-          - "len(body) > 1"
+          - "len(body) > 100"

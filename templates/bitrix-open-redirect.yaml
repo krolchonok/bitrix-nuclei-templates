@@ -1,14 +1,16 @@
 id: bitrix-open-redirect
 
 info:
-  name: Bitrix Open URL redirect detection
+  name: Bitrix Open URL Redirect
   author: JhonnyBonny
   severity: low
-  reference: https://packetstormsecurity.com/files/151955/1C-Bitrix-Site-Management-Russia-2.0-Open-Redirection.html
-  tags: redirect,bitrix,redirect,bitrix24
+  reference:
+    - https://packetstormsecurity.com/files/151955/1C-Bitrix-Site-Management-Russia-2.0-Open-Redirection.html
+  metadata:
+    max-request: 1
+  tags: redirect,bitrix,bitrix24
 
-
-requests:
+http:
   - raw:
       - |
         GET /bitrix/redirect.php?event1=&event2=&event3=download&goto=https://example.com HTTP/1.1
@@ -16,15 +18,16 @@ requests:
         User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:68.0) Gecko/20100101 Firefox/68.0
         Accept-Encoding: gzip, deflate
         Accept: */*
+
     matchers-condition: and
     matchers:
       - type: regex
+        part: header
         regex:
           - '(?m)^(?:Location\s*?:\s*?)(?:https?://|//)?(?:[a-zA-Z0-9\-_\.@]*)example\.com.*$'
-        part: header
 
       - type: status
         status:
-          - 302
           - 301
+          - 302
         condition: or

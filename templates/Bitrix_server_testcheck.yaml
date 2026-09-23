@@ -1,0 +1,52 @@
+id: bitrix-server-test
+
+info:
+  name: Bitrix Server Test Script Exposure
+  author: JhonnyBonny
+  severity: medium
+  description: Detects exposed Bitrix server test scripts that leak environment info.
+  reference:
+    - https://dev.1c-bitrix.ru/
+  classification:
+    cwe-id: CWE-200
+  metadata:
+    max-request: 5
+  tags: bitrix,exposure,servertest
+
+http:
+  - method: GET
+    path:
+      - '{{BaseURL}}/bitrix_server_test.php'
+      - '{{BaseURL}}/bustest.php'
+      - '{{BaseURL}}/s_test.php'
+      - '{{BaseURL}}/server_test.php'
+      - '{{BaseURL}}/server_test1.php'
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+
+      - type: word
+        part: body
+        words:
+          - "Bitrix"
+          - "bitrix"
+          - "Server test"
+          - "server test"
+          - "Тестирование"
+          - "Проверка сервера"
+          - "phpversion"
+          - "PHP Version"
+          - "$_SERVER"
+        condition: or
+
+      - type: word
+        part: body
+        words:
+          - "404 Not Found"
+          - "Страница не найдена"
+        negative: true
+        condition: or

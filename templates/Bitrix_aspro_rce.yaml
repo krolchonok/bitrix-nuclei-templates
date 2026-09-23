@@ -1,16 +1,19 @@
-id: "Bitrix_aspro_rce"
+id: bitrix-aspro-exposure
 
 info:
-  name: Bitrix check aspro RCE files 
+  name: Bitrix Aspro Component Files Exposure
   author: JhonnyBonny
-  severity: high
-  description: Check if the aspro files on the website.
+  severity: medium
+  description: |
+    Detects publicly reachable Aspro theme/component endpoints often used as
+    attack surface. Confirms response is not a soft-404.
   reference:
     - https://github.com/cr1f/writeups/blob/main/attacking_bitrix.pdf
   classification:
-    cve-id: CVE-0000-000
     cwe-id: CWE-200
-  tags: cve,cve2025,bitrix,rce
+  metadata:
+    max-request: 7
+  tags: bitrix,aspro,exposure
 
 http:
   - method: GET
@@ -23,8 +26,23 @@ http:
       - '{{BaseURL}}/bitrix/components/aspro/form.allcorp2/component.php'
       - '{{BaseURL}}/ajax/form.php'
 
+    stop-at-first-match: true
     matchers-condition: and
     matchers:
       - type: status
         status:
           - 200
+
+      - type: word
+        part: body
+        words:
+          - "404"
+          - "Not Found"
+          - "Not found"
+          - "Страница не найдена"
+          - "Не найдено"
+        negative: true
+
+      - type: dsl
+        dsl:
+          - "len(body) > 20"

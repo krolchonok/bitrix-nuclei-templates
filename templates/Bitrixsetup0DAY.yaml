@@ -4,17 +4,17 @@ info:
   name: Bitrix Bitrixsetup Panel
   author: JhonnyBonny
   severity: high
-  description: Bitrix Bitrixsetup Panel.
+  description: Exposed bitrixsetup.php installer panel.
   classification:
     cwe-id: CWE-200
   metadata:
     max-request: 1
-  tags: panel,bitrix,setup
+  tags: panel,bitrix,setup,exposure
 
 http:
   - method: GET
     path:
-      - "{{BaseURL}}/bitrixsetup.php" 
+      - "{{BaseURL}}/bitrixsetup.php"
 
     host-redirects: true
     max-redirects: 2
@@ -22,15 +22,19 @@ http:
     matchers-condition: and
     matchers:
       - type: word
+        part: body
         words:
           - "bitrix"
+        case-insensitive: true
+
+      - type: word
+        part: body
+        words:
           - "Выбор продукта"
           - "Choose a package"
           - "Your license key"
           - "Лицензионный ключ"
-
-        part: body
-        condition: and
+        condition: or
 
       - type: status
         status:

