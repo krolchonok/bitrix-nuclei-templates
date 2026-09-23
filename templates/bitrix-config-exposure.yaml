@@ -1,0 +1,60 @@
+id: bitrix-config-exposure
+
+info:
+  name: Bitrix Config / Backup Exposure
+  author: JhonnyBonny,krolchonok
+  severity: high
+  description: |
+    Detects exposed Bitrix config and backup files that may contain
+    database credentials (.settings.php, dbconn.php and common backups).
+  reference:
+    - https://github.com/cr1f/writeups/blob/main/attacking_bitrix.pdf
+  classification:
+    cwe-id: CWE-200
+  metadata:
+    max-request: 10
+  tags: bitrix,bak,exposure,config
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/bitrix/.settings.php"
+      - "{{BaseURL}}/bitrix/.settings.php.bak"
+      - "{{BaseURL}}/bitrix/.settings.php.old"
+      - "{{BaseURL}}/bitrix/.settings.php.save"
+      - "{{BaseURL}}/bitrix/.settings.php~"
+      - "{{BaseURL}}/bitrix/php_interface/dbconn.php"
+      - "{{BaseURL}}/bitrix/php_interface/dbconn.php.bak"
+      - "{{BaseURL}}/bitrix/php_interface/dbconn.php.old"
+      - "{{BaseURL}}/bitrix/php_interface/dbconn.php.save"
+      - "{{BaseURL}}/bitrix/license_key.php"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+
+      - type: word
+        part: body
+        words:
+          - "connections"
+          - "'database'"
+          - "'login'"
+          - "'password'"
+          - "$DBLogin"
+          - "$DBPassword"
+          - "$DBHost"
+          - "$DBName"
+          - "$DB"
+          - "LICENSE_KEY"
+          - "class_name"
+        condition: or
+
+      - type: word
+        part: body
+        words:
+          - "404 Not Found"
+          - "Страница не найдена"
+        negative: true

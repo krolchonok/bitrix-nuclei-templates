@@ -1,0 +1,60 @@
+id: bitrix-detect
+
+info:
+  name: Bitrix Detection
+  author: Chirag Mistry,krolchonok
+  severity: info
+  description: Detects Bitrix CMS via headers, body markers, and known paths.
+  metadata:
+    verified: true
+    max-request: 8
+  tags: bitrix,bitrix24,detect,tech
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}"
+      - "{{BaseURL}}/robots.txt"
+      - "{{BaseURL}}/bitrix/js/main/core/core.min.js"
+      - "{{BaseURL}}/bitrix/js/main/core/core_min.js"
+      - "{{BaseURL}}/bitrix/admin/"
+      - "{{BaseURL}}/bitrix/templates/"
+      - "{{BaseURL}}/bitrix/panel/"
+      - "{{BaseURL}}/bitrix/p3p.xml"
+
+    stop-at-first-match: true
+    host-redirects: true
+    max-redirects: 2
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: response
+        words:
+          - "Powered by Bitrix"
+          - "bitrix.com"
+          - "bitrixjs"
+          - "X-Powered-CMS: Bitrix"
+          - "X-Powered-By-Bitrix"
+          - "/bitrix/js/"
+          - "BITRIX_SM_"
+          - "bx-core"
+        condition: or
+        case-insensitive: true
+
+      - type: status
+        status:
+          - 200
+          - 301
+          - 302
+          - 401
+          - 403
+        condition: or
+
+    extractors:
+      - type: regex
+        part: body
+        name: version
+        regex:
+          - 'Bitrix ([0-9.]+)'
+          - 'Powered by Bitrix ([0-9.]+)'
